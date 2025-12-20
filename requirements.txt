@@ -5,3 +5,4 @@ lxml
 undetected_chromedriver
 setuptools
 pymongo
+pyyaml

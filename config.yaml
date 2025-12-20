@@ -1,0 +1,14 @@
+scraper:
+  headless: true
+
+targets:
+  - name: "nha_dat_ban"
+    url: "https://batdongsan.com.vn/nha-dat-ban"
+    start_page: 1
+    end_page: 2
+    enabled: true
+  - name: "nha_dat_cho_thue"
+    url: "https://batdongsan.com.vn/nha-dat-cho-thue"
+    start_page: 1
+    end_page: 2
+    enabled: true
