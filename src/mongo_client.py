@@ -1,63 +1,43 @@
 from pymongo import MongoClient, errors
-from utils.logger import get_logger
+from utils import get_logger
 
 logger = get_logger("mongodb")
-
 
 class MongoDBClient:
     def __init__(self):
         try:
             self.client = MongoClient("mongodb://localhost:27017", serverSelectionTimeoutMS=5000)
-            self.client.server_info()  # test connection
-
-            self.db = self.client["real_estate"]
+            self.client.server_info()
+            self.db = self.client["real_estate_db"]
             self.col = self.db["posts"]
             self.col.create_index("post_id", unique=True)
-
             logger.info("MongoDB connected successfully.")
-
         except Exception as e:
             logger.error(f"MongoDB connection failed: {e}")
             raise
 
-
     def insert_post(self, data: dict) -> bool:
+        if not data: return False
         try:
             self.col.insert_one(data)
             return True
-
         except errors.DuplicateKeyError:
-            logger.warning(
-                f"Duplicate post_id={data.get('post_id')}, skipped."
-            )
             return False
-
         except Exception as e:
-            logger.error(
-                f"MongoDB insert error | post_id={data.get('post_id')} | {e}"
-            )
+            logger.error(f"Insert error: {e}")
             return False
 
 
-    def insert_many_posts(self, data_list: list) -> int:
-        """Chèn hàng loạt tin, trả về số lượng tin mới đã chèn thành công."""
-        if not data_list:
-            return 0
-
+    def insert_many_posts(self, data_list: list) -> bool:
+        if not data_list: return False
         try:
-            # ordered=False: Nếu gặp tin trùng, nó bỏ qua và tiếp tục chèn các tin khác
-            result = self.col.insert_many(data_list, ordered=False)
-            return len(result.inserted_ids)
-
-        except errors.BulkWriteError as bwe:
-            # Lọc ra bao nhiêu tin mới thực sự được chèn thành công
-            inserted_count = bwe.details.get('nInserted', 0)
-            logger.warning(f"Bulk insert có trùng lặp. Đã chèn thành công {inserted_count} tin mới.")
-            return inserted_count
-
+            self.col.insert_many(data_list, ordered=False)
+            return True
+        except (errors.BulkWriteError, errors.DuplicateKeyError):
+            return True
         except Exception as e:
-            logger.error(f"Lỗi insert_many: {e}")
-            return 0
+            logger.error(f"Insert many error: {e}")
+            return False
 
     def close(self):
         if hasattr(self, 'client'):

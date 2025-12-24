@@ -1,7 +1,8 @@
 import time
 from src import (
     init_browser, process_multiple_pages, save_data,
-    init_db, load_seen_ids, load_config, get_logger
+    init_db, load_seen_ids, load_config, get_logger,
+    MongoDBClient
 )
 
 logger = get_logger("main")
@@ -9,7 +10,7 @@ logger = get_logger("main")
 def main():
     logger.info("=== STARTING SCRAPER SYSTEM ===")
     init_db()
-    # mongo = MongoDBClient()
+    mongo = MongoDBClient()
     cfg = load_config()
     sc_cfg = cfg.get('scraper', {})
     targets = cfg.get('targets', [])
@@ -27,6 +28,10 @@ def main():
     total_skipped = 0
     pages_processed = 0
 
+    def store_data(data_list):
+        save_data(data_list)
+        return mongo.insert_many_posts(data_list)
+
     try:
         for target in targets:
             if not target.get('enabled', True):
@@ -36,7 +41,7 @@ def main():
             new_record, skipped_record, page_process = process_multiple_pages(
                 driver=driver,
                 target=target,
-                save_data_fn=save_data
+                save_data_fn=store_data
             )
 
             total_new_records += new_record
@@ -49,6 +54,7 @@ def main():
     finally:
         try:
             driver.quit()
+            mongo.close()
         except Exception as e:
             logger.debug(f"Error close connection: {e}")
 

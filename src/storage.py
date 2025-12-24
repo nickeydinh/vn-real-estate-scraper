@@ -6,9 +6,6 @@ from utils.logger import get_logger
 logger = get_logger("data")
 
 def save_data(properties_data):
-    """
-    Appends data to a JSON file named based on the current date.
-    """
     if not properties_data:
         return
 
